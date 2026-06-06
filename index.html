@@ -291,7 +291,10 @@ async function addEntry(){
     owner:state.formOwner,tag:state.formTag,date:state.formDate,
     createdAt:Date.now()
   };
-  state.formDesc="";state.formAmount="";render();
+  state.formDesc="";state.formAmount="";
+  // Clear DOM inputs directly without full re-render
+  const di=document.getElementById("inp-desc"),ai=document.getElementById("inp-amt");
+  if(di)di.value="";if(ai)ai.value="";
   try{await addDoc(entriesCol,e);}catch(err){alert("Błąd zapisu: "+err.message);}
 }
 
@@ -396,7 +399,7 @@ function render(){
   html+=`<button class="pill${state.filterOwner==="przemek"?" a3":""}" onclick="setState('filterOwner','przemek')">P Przemek</button>`;
   html+=`<button class="pill${state.filterOwner==="maciek"?" a4":""}" onclick="setState('filterOwner','maciek')">M Maciek</button>`;
   html+=`<div class="sp"></div>`;
-  html+=`<input class="si" type="text" placeholder="🔍 Szukaj…" value="${esc(state.search)}" oninput="setState('search',this.value)"/>`;
+  html+=`<input class="si" type="text" placeholder="🔍 Szukaj…" value="${esc(state.search)}" oninput="setField('search',this.value)" onchange="setState('search',this.value)"/>`;
   html+=`<button class="lbtn${state.showLimits?" on":""}" onclick="toggle('showLimits')">🔔 Progi</button>`;
   html+=`<button class="cbtn" onclick="exportCSV()">⬇ CSV</button>`;
   html+=`<button class="sbtn" onclick="openScan()">📷 Paragon</button>`;
@@ -431,8 +434,8 @@ function render(){
   html+=`<div class="fc">`;
   html+=`<div class="tt"><button class="tb${state.formType==="wydatek"?" aw":""}" onclick="setState('formType','wydatek')">➖ Wydatek</button><button class="tb${state.formType==="przychod"?" ap":""}" onclick="setState('formType','przychod')">➕ Przychód</button></div>`;
   html+=`<div class="form-grid">`;
-  html+=`<div class="fg wide"><label class="fl">Opis</label><input class="fi" type="text" placeholder="${state.formType==="wydatek"?"np. Biedronka…":"np. Wypłata…"}" value="${esc(state.formDesc)}" oninput="setState('formDesc',this.value)" onkeydown="if(event.key==='Enter')addEntry()"/></div>`;
-  html+=`<div class="fg"><label class="fl">Kwota (PLN)</label><input class="fi" type="number" placeholder="0.00" value="${esc(state.formAmount)}" oninput="setState('formAmount',this.value)" onkeydown="if(event.key==='Enter')addEntry()"/></div>`;
+  html+=`<div class="fg wide"><label class="fl">Opis</label><input class="fi" id="inp-desc" type="text" placeholder="${state.formType==="wydatek"?"np. Biedronka…":"np. Wypłata…"}" value="${esc(state.formDesc)}" oninput="setField('formDesc',this.value)" onkeydown="if(event.key==='Enter')addEntry()"/></div>`;
+  html+=`<div class="fg"><label class="fl">Kwota (PLN)</label><input class="fi" id="inp-amt" type="number" placeholder="0.00" value="${esc(state.formAmount)}" oninput="setField('formAmount',this.value)" onkeydown="if(event.key==='Enter')addEntry()"/></div>`;
   html+=`<div class="fg"><label class="fl">Kategoria</label><select class="fs" onchange="setState('${state.formType==="wydatek"?"formCategory":"formIncCat"}',this.value)">`;
   (state.formType==="wydatek"?EC:IC).forEach(c=>html+=`<option value="${c.id}"${(state.formType==="wydatek"?state.formCategory:state.formIncCat)===c.id?" selected":""}>${c.icon} ${c.label}</option>`);
   html+=`</select></div>`;
@@ -515,10 +518,10 @@ function render(){
     if(state.scanStatus==="done"&&state.scanResult){
       const sr=state.scanResult;
       html+=`<div class="ss dn">✅ Sprawdź i zatwierdź dane.</div><div class="rc">`;
-      html+=`<div class="rr"><span class="rl">Opis</span><input class="re" type="text" value="${esc(sr.desc||"")}" oninput="setSR('desc',this.value)"/></div>`;
-      html+=`<div class="rr"><span class="rl">Kwota</span><div style="display:flex;align-items:center;gap:7px"><input class="re" type="number" style="max-width:95px" value="${sr.amount||""}" oninput="setSR('amount',this.value)"/><span style="font-family:'Lora',serif;font-size:1.1rem;font-weight:700;color:#a04a5a">${parseFloat(sr.amount||0).toFixed(2)} zł</span></div></div>`;
+      html+=`<div class="rr"><span class="rl">Opis</span><input class="re" type="text" value="${esc(sr.desc||"")}" oninput="setSRfield('desc',this.value)"/></div>`;
+      html+=`<div class="rr"><span class="rl">Kwota</span><div style="display:flex;align-items:center;gap:7px"><input class="re" type="number" style="max-width:95px" value="${sr.amount||""}" oninput="setSRfield('amount',this.value)"/><span style="font-family:'Lora',serif;font-size:1.1rem;font-weight:700;color:#a04a5a">${parseFloat(sr.amount||0).toFixed(2)} zł</span></div></div>`;
       html+=`<div class="rr"><span class="rl">Kategoria</span><select class="re" onchange="setSR('category',this.value)">${EC.map(c=>`<option value="${c.id}"${sr.category===c.id?" selected":""}>${c.icon} ${c.label}</option>`).join("")}</select></div>`;
-      html+=`<div class="rr"><span class="rl">Data</span><input class="re" type="date" value="${sr.date||now.toISOString().slice(0,10)}" oninput="setSR('date',this.value)"/></div>`;
+      html+=`<div class="rr"><span class="rl">Data</span><input class="re" type="date" value="${sr.date||now.toISOString().slice(0,10)}" onchange="setSR('date',this.value)"/></div>`;
       html+=`</div><button class="cfb" onclick="confirmScan()">✅ Dodaj do budżetu</button>`;
     }
     html+=`</div></div></div>`;
@@ -621,6 +624,8 @@ function drawBar(){
 }
 
 // ── GLOBAL ACTIONS ────────────────────────────────────────────────────
+// For text inputs: only update state, don't re-render (prevents keyboard closing)
+window.setField=(k,v)=>{state[k]=v;};
 window.setState=(k,v)=>{state[k]=v;render();};
 window.toggle=k=>{state[k]=!state[k];render();};
 window.setView=v=>{state.view=v;render();};
@@ -633,6 +638,7 @@ window.openScan=()=>{state.scanOpen=true;state.scanImg=null;state.scanPrev=null;
 window.closeScan=()=>{state.scanOpen=false;render();};
 window.resetScan=()=>{state.scanImg=null;state.scanPrev=null;state.scanStatus="idle";state.scanResult=null;render();};
 window.setSR=(k,v)=>{state.scanResult[k]=v;render();};
+window.setSRfield=(k,v)=>{state.scanResult[k]=v;}; // no re-render for text
 window.confirmScan=confirmScan;
 window.handleFile=ev=>{
   const f=ev.target.files&&ev.target.files[0];if(!f)return;
