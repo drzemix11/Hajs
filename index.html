@@ -265,7 +265,46 @@ let state={
   scanOpen:false,scanImg:null,scanPrev:null,scanStatus:"idle",scanResult:null,
 };
 
-// ── FIRESTORE ─────────────────────────────────────────────────────────
+// ── PASSWORD ──────────────────────────────────────────────────────────
+const PWD="Budzet2024!"; // ← ZMIEŃ NA SWOJE HASŁO
+const PWD_KEY="budzet_auth_v1";
+
+function isAuthed(){return localStorage.getItem(PWD_KEY)==="yes";}
+
+function renderLogin(){
+  document.getElementById("app").innerHTML=`
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:white;border-radius:24px;padding:40px 36px;width:100%;max-width:360px;border:1.5px solid #e8e6e0;box-shadow:0 8px 40px rgba(0,0,0,.08);text-align:center;">
+        <div style="font-size:2.8rem;margin-bottom:16px">💰</div>
+        <div style="font-family:'Lora',serif;font-size:1.6rem;font-weight:700;color:#2c2c2c;margin-bottom:6px">Budżet<span style="color:#5a8a6a">+</span></div>
+        <div style="font-size:0.72rem;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:32px">Wpisz hasło żeby wejść</div>
+        <input id="pwd-input" type="password" placeholder="Hasło…"
+          style="width:100%;padding:12px 16px;border:1.5px solid #e8e6e0;border-radius:12px;font-family:'Inter',sans-serif;font-size:1rem;outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px;"
+          onkeydown="if(event.key==='Enter')checkPwd()"/>
+        <div id="pwd-err" style="color:#a04a5a;font-size:0.78rem;min-height:20px;margin-bottom:8px"></div>
+        <button onclick="checkPwd()"
+          style="width:100%;padding:13px;border:none;border-radius:12px;background:#2c2c2c;color:white;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;">
+          Wejdź →
+        </button>
+      </div>
+    </div>`;
+  setTimeout(()=>{const i=document.getElementById("pwd-input");if(i)i.focus();},100);
+}
+
+window.checkPwd=()=>{
+  const val=document.getElementById("pwd-input")?.value||"";
+  if(val===PWD){
+    localStorage.setItem(PWD_KEY,"yes");
+    startApp();
+  } else {
+    const err=document.getElementById("pwd-err");
+    if(err){err.textContent="❌ Złe hasło, spróbuj ponownie.";setTimeout(()=>{if(err)err.textContent="";},2500);}
+    const inp=document.getElementById("pwd-input");
+    if(inp){inp.value="";inp.focus();}
+  }
+};
+// ── START APP ─────────────────────────────────────────────────────────
+function startApp(){
 // Listen to entries
 const entriesCol=collection(db,"entries");
 const q=query(entriesCol,orderBy("date","desc"));
@@ -660,6 +699,10 @@ window.analyzeScan=()=>{
     state.scanStatus="done";render();
   }).catch(()=>{state.scanStatus="error";render();});
 };
+} // end startApp()
+
+// ── BOOT ──────────────────────────────────────────────────────────────
+if(isAuthed()){startApp();}else{renderLogin();}
 </script>
 </body>
 </html>
